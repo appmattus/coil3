@@ -1,5 +1,7 @@
 package com.appmattus.coil3.ppm
 
+import com.appmattus.coil3.core.Argb8888Raster
+import com.appmattus.coil3.core.Rgba16Raster
 import okio.Buffer
 import okio.IOException
 import kotlin.test.Test
@@ -34,7 +36,7 @@ class PpmParserTest {
             .writeUtf8("P6\n2 1\n255\n")
             .write(byteArrayOf(0xFF.toByte(), 0, 0, 0x12, 0x34, 0x56))
 
-        val image = assertIs<Ppm8BitImage>(PpmParser.parse(buffer))
+        val image = assertIs<Argb8888Raster>(PpmParser.parse(buffer))
 
         assertEquals(2, image.width)
         assertEquals(1, image.height)
@@ -48,11 +50,11 @@ class PpmParserTest {
             .write(byteArrayOf(0xFF.toByte(), 0xFF.toByte(), 0x80.toByte(), 0x00, 0x00, 0x00))
             .write(byteArrayOf(0x12, 0x34, 0x00, 0x01, 0xAB.toByte(), 0xCD.toByte()))
 
-        val image = assertIs<Ppm16BitImage>(PpmParser.parse(buffer))
+        val image = assertIs<Rgba16Raster>(PpmParser.parse(buffer))
 
         assertEquals(2, image.width)
         assertEquals(1, image.height)
-        assertContentEquals(samples(0xFFFF, 0x8000, 0x0000, 0x1234, 0x0001, 0xABCD), image.samples)
+        assertContentEquals(samples(0xFFFF, 0x8000, 0x0000, 0xFFFF, 0x1234, 0x0001, 0xABCD, 0xFFFF), image.samples)
     }
 
     @Test
@@ -61,39 +63,23 @@ class PpmParserTest {
             .writeUtf8("P6 1 1 1023 ")
             .write(byteArrayOf(0x03, 0xFF.toByte(), 0x00, 0x00, 0x02, 0x00))
 
-        val image = assertIs<Ppm16BitImage>(PpmParser.parse(buffer))
+        val image = assertIs<Rgba16Raster>(PpmParser.parse(buffer))
 
         // 1023 -> 65535, 0 -> 0, 512 -> round(512 * 65535 / 1023) = 32800
-        assertContentEquals(samples(0xFFFF, 0x0000, 32800), image.samples)
+        assertContentEquals(samples(0xFFFF, 0x0000, 32800, 0xFFFF), image.samples)
     }
 
     @Test
     fun parsesAsciiP3WithMaxColorValueAbove255AsSixteenBit() {
-        val image = assertIs<Ppm16BitImage>(PpmParser.parse(Buffer().writeUtf8("P3 1 1 65535 65535 32768 1")))
+        val image = assertIs<Rgba16Raster>(PpmParser.parse(Buffer().writeUtf8("P3 1 1 65535 65535 32768 1")))
 
-        assertContentEquals(samples(0xFFFF, 0x8000, 0x0001), image.samples)
+        assertContentEquals(samples(0xFFFF, 0x8000, 0x0001, 0xFFFF), image.samples)
     }
 
     @Test
     fun treatsMaxColorValue255AsEightBit() {
-        assertIs<Ppm8BitImage>(PpmParser.parse(Buffer().writeUtf8("P3 1 1 255 0 0 0")))
-        assertIs<Ppm16BitImage>(PpmParser.parse(Buffer().writeUtf8("P3 1 1 256 0 0 0")))
-    }
-
-    @Test
-    fun reducesSixteenBitToArgb8888() {
-        val image = Ppm16BitImage(2, 1, samples(0xFFFF, 0x8000, 0x0000, 0x0080, 0x007F, 0x1234))
-
-        // 0x8000 -> 128, 0x0080 -> 0.498 -> 0, 0x1234 -> 18.1 -> 18
-        assertContentEquals(intArrayOf(0xFFFF8000.toInt(), 0xFF000012.toInt()), image.toArgb8888())
-    }
-
-    @Test
-    fun convertsSixteenBitToRgbaF16() {
-        val image = Ppm16BitImage(1, 1, samples(0xFFFF, 0x0000, 0x8000))
-
-        // 0x8000 / 65535 is just over 0.5 (0x3800), which rounds to the next half float up.
-        assertContentEquals(halves(0x3C00, 0x0000, 0x3800, 0x3C00), image.toRgbaF16())
+        assertIs<Argb8888Raster>(PpmParser.parse(Buffer().writeUtf8("P3 1 1 255 0 0 0")))
+        assertIs<Rgba16Raster>(PpmParser.parse(Buffer().writeUtf8("P3 1 1 256 0 0 0")))
     }
 
     @Test
@@ -142,11 +128,9 @@ class PpmParserTest {
 
     private fun parse(text: String) = PpmParser.parse(Buffer().writeUtf8(text))
 
-    private fun parse8Bit(text: String) = assertIs<Ppm8BitImage>(parse(text))
+    private fun parse8Bit(text: String) = assertIs<Argb8888Raster>(parse(text))
 
     private fun samples(vararg values: Int) = ShortArray(values.size) { values[it].toShort() }
-
-    private fun halves(vararg values: Int) = ShortArray(values.size) { values[it].toShort() }
 
     private companion object {
         const val RED = 0xFFFF0000.toInt()

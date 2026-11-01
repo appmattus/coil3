@@ -1,5 +1,6 @@
 package com.appmattus.coil3.ppm
 
+import com.appmattus.coil3.core.toDecodeResult
 import coil3.ImageLoader
 import coil3.decode.DecodeResult
 import coil3.decode.Decoder
@@ -25,13 +26,7 @@ public class PpmDecoder(
 ) : Decoder {
 
     override suspend fun decode(): DecodeResult {
-        val ppm = source.source().use(PpmParser::parse)
-        val imageBitmap = createImageBitmap(ppm)
-
-        return DecodeResult(
-            image = imageBitmap.asCoilImage(),
-            isSampled = false,
-        )
+        return source.source().use(PpmParser::parse).toDecodeResult()
     }
 
     /** Registers [PpmDecoder] with an [ImageLoader]. */

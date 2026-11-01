@@ -17,6 +17,7 @@ dependencyResolutionManagement {
 rootProject.name = "coil3-decoders"
 
 include(
+    ":coil-core",
     ":coil-ppm",
     ":coil-pgm",
     ":coil-pam",
