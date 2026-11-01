@@ -3,12 +3,15 @@ kotlin = "2.4.10"
 agp = "9.5.0"
 coil = "3.6.3"
 compose = "1.12.0"
+# Must match the Skiko version that Compose resolves to (see ./gradlew :coil-ppm:dependencies).
+skiko = "0.150.1"
 
 android-compileSdk = "37"
 android-minSdk = "23"
 
 [libraries]
 coil-core = { module = "io.coil-kt.coil3:coil-core", version.ref = "coil" }
+skiko-wasm-runtime = { module = "org.jetbrains.skiko:skiko-js-wasm-runtime", version.ref = "skiko" }
 compose-ui-graphics = { module = "org.jetbrains.compose.ui:ui-graphics", version.ref = "compose" }
 
 # Plugin artifacts used by build-logic
