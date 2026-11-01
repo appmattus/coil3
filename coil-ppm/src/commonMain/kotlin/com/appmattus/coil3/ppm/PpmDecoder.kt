@@ -13,6 +13,9 @@ import okio.use
 /**
  * A [Decoder] for Netpbm PPM images in both ASCII (`P3`) and binary (`P6`) form.
  *
+ * Images with a max color value above 255 are decoded to a 16-bit (RGBA_F16) bitmap so the extra precision is kept,
+ * except on Android before API 26, where they are reduced to 8 bits per sample.
+ *
  * Pixels are decoded into a Compose [androidx.compose.ui.graphics.ImageBitmap], which is then wrapped as a
  * Coil [coil3.Image] so it can be displayed on every supported platform.
  */
@@ -23,7 +26,7 @@ public class PpmDecoder(
 
     override suspend fun decode(): DecodeResult {
         val ppm = source.source().use(PpmParser::parse)
-        val imageBitmap = createImageBitmap(ppm.width, ppm.height, ppm.pixels)
+        val imageBitmap = createImageBitmap(ppm)
 
         return DecodeResult(
             image = imageBitmap.asCoilImage(),
