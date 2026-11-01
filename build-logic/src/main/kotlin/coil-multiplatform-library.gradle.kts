@@ -12,6 +12,20 @@ plugins {
 
 val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
 
+// coil-core's JS and Wasm code imports Skiko's runtime (js-reexport-symbols.mjs, skiko.mjs, skiko.wasm), which
+// isn't copied into test bundles automatically. Unpack it so it can be added to the test resources below.
+val skikoWasmRuntime = configurations.create("skikoWasmRuntime") {
+    isCanBeConsumed = false
+    isTransitive = false
+}
+dependencies {
+    skikoWasmRuntime(libs.findLibrary("skiko-wasm-runtime").get())
+}
+val unpackSkikoWasmRuntime = tasks.register<UnpackSkikoWasmRuntime>("unpackSkikoWasmRuntime") {
+    runtimeJars.from(skikoWasmRuntime)
+    outputDirectory.set(layout.buildDirectory.dir("skiko-wasm-runtime"))
+}
+
 kotlin {
     explicitApi()
 
@@ -22,6 +36,7 @@ kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
+        withHostTest {}
     }
 
     jvm {
@@ -30,15 +45,24 @@ kotlin {
         }
     }
 
+    // Skiko's runtime needs a browser (it writes to `window`), so tests run in headless Chrome rather than Node.
     js {
-        browser()
-        nodejs()
+        browser {
+            testTask { useKarma { useChromeHeadless() } }
+        }
+        nodejs {
+            testTask { enabled = false }
+        }
     }
 
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
-        browser()
-        nodejs()
+        browser {
+            testTask { useKarma { useChromeHeadless() } }
+        }
+        nodejs {
+            testTask { enabled = false }
+        }
     }
 
     iosArm64()
@@ -51,6 +75,12 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
+        }
+        jsTest {
+            resources.srcDir(unpackSkikoWasmRuntime)
+        }
+        wasmJsTest {
+            resources.srcDir(unpackSkikoWasmRuntime)
         }
     }
 }
