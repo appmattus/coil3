@@ -11,8 +11,12 @@ import coil3.decode.DecodeResult
  * except on Android before API 26, where they are reduced to ARGB_8888.
  */
 @InternalCoilDecoderApi
-public fun RasterImage.toDecodeResult(): DecodeResult = DecodeResult(
-    image = toImageBitmap().asCoilImage(),
+public fun RasterImage.toDecodeResult(): DecodeResult = toImageBitmap().toDecodeResult()
+
+/** Creates the [DecodeResult] for [this] bitmap, wrapped as a Coil [Image]. */
+@InternalCoilDecoderApi
+public fun ImageBitmap.toDecodeResult(): DecodeResult = DecodeResult(
+    image = asCoilImage(),
     isSampled = false,
 )
 
