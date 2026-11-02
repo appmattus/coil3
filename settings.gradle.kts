@@ -18,8 +18,6 @@ rootProject.name = "coil3-decoders"
 
 include(
     ":coil-core",
-    ":coil-ppm",
-    ":coil-pgm",
-    ":coil-pam",
+    ":coil-netpbm",
     ":coil-heif",
 )
